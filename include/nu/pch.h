@@ -4,10 +4,7 @@ namespace Eigen
 {
 }
 
-namespace nu
+namespace ei
 {
-    namespace ei
-    {
-        using namespace Eigen;
-    }
+    using namespace Eigen;
 }
