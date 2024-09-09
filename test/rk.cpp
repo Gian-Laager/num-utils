@@ -1,3 +1,4 @@
+#include "Eigen/Core"
 #include "pch.h"
 #include "nu/nu.h"
 #include <limits>
@@ -73,3 +74,57 @@ ei::VectorXd exp_F(double x)
 }
 
 IMPL_RK45_INI_TEST(exp, (ei::Vector<double, 1>{1.0}), kf, exp_F, std::numeric_limits<float>::epsilon(), 1000);
+
+ei::VectorXd neg_f_squared(double x, const ei::VectorXd& f)
+{
+    return -ei::Vector<double, 1>{f(0) * f(0)};
+}
+
+ei::VectorXd non_lin_sol(double x)
+{
+    return ei::Vector<double, 1>{1.0 / (1.0 + x)};
+}
+
+IMPL_RK45_INI_TEST(NonLinear, (ei::Vector<double, 1>{1.0}), neg_f_squared, non_lin_sol, std::numeric_limits<float>::epsilon(), 1000);
+
+ei::VectorXd coupled_linear(double t, const ei::VectorXd& f)
+{
+    double deg45 = std::numbers::pi / 4.0;
+    ei::Matrix3d rot45x;
+    rot45x << 1.0, 0.0, 0.0,
+        0.0, cos(deg45), -sin(deg45),
+        0.0, sin(deg45), cos(deg45);
+    ei::Matrix3d rot45y;
+    rot45y << cos(deg45), 0.0, -sin(deg45),
+        0.0, 1.0, 0.0,
+        sin(deg45), 0.0, cos(deg45);
+    ei::Matrix3d lambda = ei::Matrix3d{
+        {-2.0, 0.0, 0.0},
+        {0.0, 1.0, 0.0},
+        {0.0, 0.0, -3.0}};
+    ei::Matrix3d a = rot45x * rot45y * lambda * (rot45x * rot45y).transpose();
+
+    return a * f;
+}
+
+ei::Vector3d coupled_linear_sol(double t)
+{
+    double deg45 = std::numbers::pi / 4.0;
+    ei::Matrix3d rot45x;
+    rot45x << 1.0, 0.0, 0.0,
+        0.0, cos(deg45), -sin(deg45),
+        0.0, sin(deg45), cos(deg45);
+    ei::Matrix3d rot45y;
+    rot45y << cos(deg45), 0.0, -sin(deg45),
+        0.0, 1.0, 0.0,
+        sin(deg45), 0.0, cos(deg45);
+    ei::Matrix3d lambda = ei::Matrix3d{
+        {exp(-2.0 * t), 0.0, 0.0},
+        {0.0, exp(1.0 * t), 0.0},
+        {0.0, 0.0, exp(-3.0 * t)}};
+    ei::Matrix3d a = rot45x * rot45y * lambda * (rot45x * rot45y).transpose();
+
+    return a * ei::Vector3d{1.0, 1.0, 1.0};
+}
+
+IMPL_RK45_INI_TEST(CoupledLinear, (ei::Vector3d::Ones()), coupled_linear, coupled_linear_sol, std::numeric_limits<float>::epsilon(), 1000);
