@@ -1,0 +1,25 @@
+BasedOnStyle: LLVM
+
+AccessModifierOffset: -4
+AllowShortIfStatementsOnASingleLine: false
+BreakBeforeBraces: Allman
+ColumnLimit: 0
+IndentCaseLabels: false
+IndentWidth: 4
+SortIncludes: false
+TabWidth: 4
+PointerAlignment: Left
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+Cpp11BracedListStyle: true 
+EmptyLineBeforeAccessModifier: LogicalBlock 
+FixNamespaceComments: false
+IncludeBlocks: Regroup 
+NamespaceIndentation: All
+SpaceAfterTemplateKeyword: false 
+SpaceBeforeCpp11BracedList: false 
+SpaceBeforeCtorInitializerColon: false 
+SpaceBeforeParens: ControlStatements 
+SpaceBeforeRangeBasedForLoopColon: true 
+SpaceInEmptyBlock: false 
+SpacesInContainerLiterals: false 
+ReflowComments: true
