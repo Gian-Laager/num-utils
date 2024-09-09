@@ -1,6 +1,7 @@
 #pragma once
 
+#include "nu/diff.h"
+
 namespace nu
 {
-    int add(int a, int b);
 }
