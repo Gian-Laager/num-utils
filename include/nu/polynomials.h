@@ -3,7 +3,7 @@
 #include "Eigen/Core"
 #include "Eigen/Eigenvalues"
 #include <cmath>
-#include <type_traits>
+#include <utility>
 
 namespace nu
 {
@@ -58,22 +58,6 @@ namespace nu
         {
             return eval_covector(x) * self();
         }
-
-        template<size_t OutDeg>
-        operator typename std::enable_if<(OutDeg >= Deg), Poly<Scalar, OutDeg, Base>>::type()
-        {
-            Poly<Scalar, OutDeg, Base> result = Poly<Scalar, OutDeg, Base>::Zero();
-
-            result.template block<Deg, 1>(0, 0) = self();
-            return result;
-        }
-
-        template<size_t InDeg>
-        explicit Poly(std::enable_if_t<(InDeg < Deg), const ei::Vector<Scalar, InDeg>&> v)
-        {
-            self().setZero();
-            self().template block<InDeg, 1>(0, 0) = v;
-        }
     };
 
 #define MAKE_POLY_ALIASES_FOR_DIMS(Prefix, Postfix, Scalar, Base) \
@@ -92,4 +76,135 @@ namespace nu
 
     MAKE_POLY_ALIASES_FOR_BASE(Poly, StdPolyBase);
     MAKE_POLY_ALIASES_FOR_BASE(Legendre, LegendrePolyBase);
+
+    template<typename Scalar, unsigned n>
+    struct GaussLegendreHelper
+    {
+        template<ei::Index Rows, ei::Index Cols>
+        using Mat = ei::Matrix<Scalar, Rows, Cols>;
+
+        template<ei::Index Dim>
+        using Vec = ei::Vector<Scalar, Dim>;
+        static std::pair<Vec<n>, Vec<n>> value()
+        {
+            using namespace Eigen;
+
+            Mat<n, n> J = Mat<n, n>::Zero(n, n);
+            for (int i = 1; i < n; ++i)
+            {
+                double b = i / std::sqrt(4.0 * i * i - 1.0);
+                J(i, i - 1) = b;
+                J(i - 1, i) = b;
+            }
+
+            SelfAdjointEigenSolver<Mat<n, n>> eigensolver(J);
+            Vec<n> points = eigensolver.eigenvalues();
+            Mat<n, n> vectors = eigensolver.eigenvectors();
+
+            Vec<n> weights = Vec<n>::Zero(n);
+            for (ei::Index i = 0; i < n; ++i)
+            {
+                weights[i] = 2 * vectors(0, i) * vectors(0, i);
+            }
+
+            return {points, weights};
+        }
+    };
+
+    template<typename Scalar>
+    struct GaussLegendreHelper<Scalar, 1>
+    {
+        static constexpr unsigned n = 1;
+        static constexpr std::pair<ei::Vector<Scalar, n>, ei::Vector<Scalar, n>> value()
+        {
+            return std::make_pair<ei::Vector<Scalar, n>, ei::Vector<Scalar, n>>(
+                {0}, {2});
+        }
+    };
+
+    template<typename Scalar>
+    struct GaussLegendreHelper<Scalar, 2>
+    {
+        static constexpr unsigned n = 2;
+        static constexpr std::pair<ei::Vector<Scalar, n>, ei::Vector<Scalar, n>> value()
+        {
+            return std::make_pair<ei::Vector<Scalar, n>, ei::Vector<Scalar, n>>(
+                {1.0 / sqrt(3.0), -1.0 / sqrt(3.0)}, {8.0 / 9.0, 5.0 / 9.0});
+        }
+    };
+
+    template<typename Scalar>
+    struct Quadrature
+    {
+    private:
+        template<ei::Index Rows, ei::Index Cols>
+        using Mat = ei::Matrix<Scalar, Rows, Cols>;
+
+        template<ei::Index Dim>
+        using Vec = ei::Vector<Scalar, Dim>;
+
+    public:
+        template<unsigned n>
+        static std::pair<Vec<n>, Vec<n>> gauss_legendre()
+        {
+            return GaussLegendreHelper<Scalar, n>::value();
+        }
+
+        static std::pair<Vec<ei::Dynamic>, Vec<ei::Dynamic>> gauss_legendre(unsigned n)
+        {
+            using namespace Eigen;
+
+            constexpr ei::Index dyn = ei::Dynamic;
+
+            Mat<dyn, dyn> J = Mat<dyn, dyn>::Zero(n, n);
+            for (ei::Index i = 1; i < n; ++i)
+            {
+                double b = i / std::sqrt(4.0 * i * i - 1.0);
+                J(i, i - 1) = b;
+                J(i - 1, i) = b;
+            }
+
+            SelfAdjointEigenSolver<Mat<dyn, dyn>> eigensolver(J);
+            Vec<dyn> points = eigensolver.eigenvalues();
+            Mat<dyn, dyn> vectors = eigensolver.eigenvectors();
+
+            Vec<dyn> weights = Vec<dyn>::Zero(n);
+            for (ei::Index i = 0; i < n; ++i)
+            {
+                weights[i] = 2 * vectors(0, i) * vectors(0, i);
+            }
+
+            return {points, weights};
+        }
+
+        template<unsigned n, typename Fn>
+        static std::invoke_result_t<Fn, const Scalar&> integ_over_unit_ball(const Fn& f)
+        {
+            auto [evalPoints, weights] = gauss_legendre<n>();
+
+            std::invoke_result_t<Fn, const Scalar&> result = weights(0) * f(evalPoints(0));
+
+            for (ei::Index i = 1; i < evalPoints.rows(); i++)
+            {
+                result += weights(i) * f(evalPoints(i));
+            }
+
+            return result;
+        }
+
+        template<typename Fn>
+        static std::invoke_result_t<Fn, const Scalar&> integ_over_unit_ball(const Fn& f, unsigned n)
+        {
+            auto [evalPoints, weights] = gauss_legendre(n);
+
+            std::invoke_result_t<Fn, const Scalar&> result = weights(0) * f(evalPoints(0));
+
+            for (ei::Index i = 1; i < evalPoints.rows(); i++)
+            {
+                result += weights(i) * f(evalPoints(i));
+            }
+
+            return result;
+        }
+    };
 }
