@@ -10,7 +10,7 @@
         using namespace nu;                                                                                              \
                                                                                                                          \
         ei::VectorXd state = INITIAL;                                                                                    \
-        Rk45 rk(state);                                                                                                  \
+        Rk45X rk(state);                                                                                                  \
                                                                                                                          \
         for (int i = 0; i < N_STEPS; i++)                                                                                \
         {                                                                                                                \
