@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 
-namespace nu 
+namespace nu
 {
     template<ei::Index Dim>
     struct Rk45
@@ -12,7 +12,7 @@ namespace nu
 
         double tolerance = std::numeric_limits<float>::epsilon();
         double hLowerBound = std::numeric_limits<float>::epsilon();
-        double hUppoerBound = std::numeric_limits<double>::infinity();
+        double hUpperBound = std::numeric_limits<double>::infinity();
         double hMultipier = 3.0 / 4.0;
 
         using StateVec = ei::Vector<double, Dim>;
@@ -41,11 +41,11 @@ namespace nu
         }
 
         template<typename Fn>
-        std::pair<double, ei::VectorXd> compute_next_state(const Fn& f) const
+        std::pair<double, StateVec> compute_next_state(const Fn& f) const
         {
             ei::Matrix<double, Dim, BUTCHER_SIZE> ks = calc_ks(f);
             double new_t = t + h;
-            ei::VectorXd new_state = state + h * ks * b;
+            StateVec new_state = state + h * ks * b;
 
             return std::make_pair(new_t, new_state);
         }
@@ -59,12 +59,15 @@ namespace nu
 
             while (true)
             {
+                if (h > hUpperBound)
+                    h = hUpperBound;
+
                 ks = calc_ks(f);
                 new_t = t + h;
                 current_h = h;
                 StateVec error = h * ks * (b - bs);
 
-                if (error.squaredNorm() < std::pow(tolerance * 0.1, 2) && h / hMultipier < hUppoerBound)
+                if (error.norm() < tolerance * 0.1 && h / hMultipier < hUpperBound)
                 {
                     h /= hMultipier;
                     break;
@@ -75,7 +78,7 @@ namespace nu
                     break;
                 }
 
-                if (error.squaredNorm() > std::pow(tolerance, 2))
+                if (error.norm() > tolerance)
                 {
                     h *= hMultipier;
                     continue;
@@ -85,6 +88,24 @@ namespace nu
 
             t = new_t;
             state += current_h * ks * b;
+        }
+
+        template<typename Fn>
+        std::vector<std::pair<double, StateVec>> integrate_to(const Fn& f, double tFinal)
+        {
+            const double prevHUpperBound = hUpperBound;
+            std::vector<std::pair<double, StateVec>> values;
+
+            while (t < tFinal)
+            {
+                values.push_back(std::make_pair(t, state));
+
+                hUpperBound = tFinal - t;
+                step(f);
+            }
+            hUpperBound = prevHUpperBound;
+
+            return values;
         }
     };
 
