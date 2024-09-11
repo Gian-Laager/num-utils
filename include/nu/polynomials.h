@@ -3,10 +3,32 @@
 #include "Eigen/Core"
 #include "Eigen/Eigenvalues"
 #include <cmath>
-#include <utility>
+#include <vector>
 
 namespace nu
 {
+    template<typename T>
+    struct is_complex : public std::false_type
+    {
+    };
+
+    template<typename R>
+    struct is_complex<std::complex<R>> : public std::is_floating_point<R>
+    {
+    };
+
+    template<typename S>
+    struct RealScalar 
+    {
+        using type = S;
+    };
+
+    template<typename S>
+    struct RealScalar<std::complex<S>> 
+    {
+        using type = S;
+    };
+
     template<typename Scalar>
     struct StdPolyBase
     {
@@ -76,6 +98,74 @@ namespace nu
 
     MAKE_POLY_ALIASES_FOR_BASE(Poly, StdPolyBase);
     MAKE_POLY_ALIASES_FOR_BASE(Legendre, LegendrePolyBase);
+
+    template<typename Scalar, typename = void>
+    struct choose_eigen_solver;
+
+    template<typename Scalar>
+    struct choose_eigen_solver<Scalar, std::enable_if_t<is_complex<Scalar>::value>>
+    {
+        using Mat = ei::Matrix<Scalar, ei::Dynamic, ei::Dynamic>;
+        using type = ei::ComplexEigenSolver<Mat>;
+    };
+
+    template<typename Scalar>
+    struct choose_eigen_solver<Scalar, std::enable_if_t<std::is_floating_point<Scalar>::value>>
+    {
+        using Mat = ei::Matrix<Scalar, ei::Dynamic, ei::Dynamic>;
+        using type = ei::EigenSolver<Mat>;
+    };
+
+    template<typename Scalar>
+    using RootsType = std::vector<typename choose_eigen_solver<Scalar>::type::EigenvalueType::Scalar>;
+
+    template<typename Scalar, size_t Deg>
+    RootsType<Scalar> roots(const Poly<Scalar, Deg, StdPolyBase<Scalar>>& poly, typename RealScalar<Scalar>::type h = 0.0)
+    {
+        using Mat = choose_eigen_solver<Scalar>::Mat;
+        using Solver = choose_eigen_solver<Scalar>::type;
+
+        ei::Index nonZeroDeg = Deg;
+
+        for (; nonZeroDeg >= 0; nonZeroDeg--)
+        {
+            if (std::norm(poly(nonZeroDeg)) > h)
+                break;
+        }
+
+        Mat charact = Mat::Zero(nonZeroDeg, nonZeroDeg);
+        Solver solver;
+
+        for (ei::Index i = 0; i < charact.rows(); i++)
+        {
+            if (i < charact.rows() - 1) [[likely]]
+                charact(i, i + 1) = 1.0;
+            charact(charact.rows() - 1, i) = -poly(i) / poly(nonZeroDeg);
+        }
+        solver.compute(charact, false);
+        auto eigs = solver.eigenvalues();
+        return std::vector(eigs.begin(), eigs.end());
+    }
+
+    template<typename L, typename H>
+    using MultiplicationResultType = decltype(std::declval<const L&>() * std::declval<const H&>());
+
+    template<typename ScalarL, size_t DegL, typename ScalarR, size_t DegR>
+    Poly<MultiplicationResultType<ScalarL, ScalarR>, DegL + DegR, StdPolyBase<MultiplicationResultType<ScalarL, ScalarR>>>
+    operator*(const Poly<ScalarL, DegL, StdPolyBase<ScalarL>>& lhs, const Poly<ScalarR, DegR, StdPolyBase<ScalarR>>& rhs)
+    {
+        using Res_t = Poly<MultiplicationResultType<ScalarL, ScalarR>, DegL + DegR, StdPolyBase<MultiplicationResultType<ScalarL, ScalarR>>>;
+        Res_t result = Res_t::Zero();
+
+        for (ei::Index i = 0; i < lhs.rows(); i++)
+        {
+            for (ei::Index j = 0; j < rhs.rows(); j++)
+            {
+                result(i + j) += lhs(i) * rhs(j);
+            }
+        }
+        return result;
+    }
 
     template<typename Scalar, unsigned n>
     struct GaussLegendreHelper
