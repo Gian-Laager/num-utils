@@ -1,5 +1,5 @@
-nnoremap <leader><leader>c :T cmake -B cmake-build-debug -j 17 -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1  && rm -f compile_commands.json && ln -s cmake-build-debug/compile_commands.json ./compile_commands.json<CR>
-nnoremap <leader><leader>C :T cmake -B cmake-build-release -j 17 -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1  && rm -f compile_commands.json && ln -s cmake-build-release/compile_commands.json ./compile_commands.json<CR>
+nnoremap <leader><leader>c :T cmake -B cmake-build-debug -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1  && rm -f compile_commands.json && ln -s cmake-build-debug/compile_commands.json ./compile_commands.json<CR>
+nnoremap <leader><leader>C :T cmake -B cmake-build-release -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1  && rm -f compile_commands.json && ln -s cmake-build-release/compile_commands.json ./compile_commands.json<CR>
 nnoremap <leader><leader>b :T cmake --build cmake-build-debug -j 17 --target num-utils-test<CR>
 nnoremap <leader><leader>B :T cmake --build cmake-build-release --j 17 -target num-utils-test<CR>
 " nnoremap <leader><leader>r :T cmake --build cmake-build-debug --target num-utils && ./cmake-build-debug/num-utils<CR>

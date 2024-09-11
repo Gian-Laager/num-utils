@@ -22,19 +22,25 @@ include(FetchContent)
 if(TARGET Eigen3::Eigen)
     message(STATUS "using existing Eigen3::Eigen")
 else ()
-    FetchContent_Declare(
-      Eigen
-      GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-      GIT_TAG master
-      GIT_SHALLOW TRUE
-      GIT_PROGRESS TRUE)
+    find_package(Eigen3)
 
-    set(EIGEN_BUILD_TESTING OFF)
-    set(EIGEN_MPL2_ONLY ON)
-    set(EIGEN_USE_LAPACKE ON)
-    set(EIGEN_BUILD_PKGCONFIG OFF)
-    set(EIGEN_BUILD_DOC OFF)
-    FetchContent_MakeAvailable(Eigen)
+    if (Eigen3_FOUND)
+        message(STATUS "using system Eigen3::Eigen")
+    else()
+        FetchContent_Declare(
+          Eigen
+          GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+          GIT_TAG master
+          GIT_SHALLOW TRUE
+          GIT_PROGRESS TRUE)
+
+        set(EIGEN_BUILD_TESTING OFF)
+        set(EIGEN_MPL2_ONLY ON)
+        set(EIGEN_USE_LAPACKE ON)
+        set(EIGEN_BUILD_PKGCONFIG OFF)
+        set(EIGEN_BUILD_DOC OFF)
+        FetchContent_MakeAvailable(Eigen)
+    endif()
 endif()
 
 file(GLOB SRC "src/**.cpp")
