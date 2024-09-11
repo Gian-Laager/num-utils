@@ -18,19 +18,24 @@ elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 endif()
 
 include(FetchContent)
-FetchContent_Declare(
-  Eigen
-  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-  GIT_TAG master
-  GIT_SHALLOW TRUE
-  GIT_PROGRESS TRUE)
 
-set(EIGEN_BUILD_TESTING OFF)
-set(EIGEN_MPL2_ONLY ON)
-set(EIGEN_USE_LAPACKE ON)
-set(EIGEN_BUILD_PKGCONFIG OFF)
-set(EIGEN_BUILD_DOC OFF)
-FetchContent_MakeAvailable(Eigen)
+if(TARGET Eigen3::Eigen)
+    message(STATUS "using existign Eigen3::Eigen")
+else ()
+    FetchContent_Declare(
+      Eigen
+      GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+      GIT_TAG master
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE)
+
+    set(EIGEN_BUILD_TESTING OFF)
+    set(EIGEN_MPL2_ONLY ON)
+    set(EIGEN_USE_LAPACKE ON)
+    set(EIGEN_BUILD_PKGCONFIG OFF)
+    set(EIGEN_BUILD_DOC OFF)
+    FetchContent_MakeAvailable(Eigen)
+endif()
 
 file(GLOB SRC "src/**.cpp")
 file(GLOB HEAD "include/**.h")
@@ -38,12 +43,22 @@ list(FILTER HEAD EXCLUDE REGEX ".*pch.h$")
 
 set(LIB_NAME "${PROJECT_NAME}")
 
-include_directories("include/")
-
-add_library(${LIB_NAME} STATIC ${SRC} ${HEAD})
+add_library(${LIB_NAME} STATIC)
+target_sources(${LIB_NAME}
+    PRIVATE
+        ${SRC}
+    PUBLIC
+        ${HEAD}
+)
 target_link_libraries(${LIB_NAME} Eigen3::Eigen)
-target_include_directories(${LIB_NAME} PUBLIC "${CMAKE_SOURCE_DIRECTORY}/include")
+target_include_directories(${LIB_NAME}
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
 target_precompile_headers(${LIB_NAME} PUBLIC include/nu/pch.h)
+
+add_library(NumUtils::nu ALIAS ${LIB_NAME})
 
 if (BUILD_TESTS)
     add_subdirectory(test)
