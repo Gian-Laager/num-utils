@@ -1,10 +1,5 @@
 #pragma once
 
-namespace Eigen
-{
-}
+#include "Eigen/Core"
 
-namespace ei
-{
-    using namespace Eigen;
-}
+namespace ei = Eigen;
