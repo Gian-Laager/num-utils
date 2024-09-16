@@ -34,9 +34,9 @@ namespace nu
         template<typename Fn, typename in_t = double>                                                                \
         using Vec = std::invoke_result_t<Fn, in_t>;                                                                  \
                                                                                                                      \
+    public:                                                                                                          \
         static constexpr std::array<double, Order + 1> coeffs{__VA_ARGS__};                                          \
                                                                                                                      \
-    public:                                                                                                          \
         template<typename Fn>                                                                                        \
         static Vec<Fn> deriv(const Fn& f, double x)                                                                  \
         {                                                                                                            \
@@ -73,9 +73,9 @@ namespace nu
         template<typename Fn, typename in_t = double>                                                                \
         using Vec = std::invoke_result_t<Fn, in_t>;                                                                  \
                                                                                                                      \
+    public:                                                                                                          \
         static constexpr std::array<double, Order + 1> coeffs{__VA_ARGS__};                                          \
                                                                                                                      \
-    public:                                                                                                          \
         template<typename Fn>                                                                                        \
         static Vec<Fn> deriv(const Fn& f, double x)                                                                  \
         {                                                                                                            \
@@ -115,9 +115,9 @@ namespace nu
         template<typename Fn, typename in_t = double>                                                                \
         using Vec = std::invoke_result_t<Fn, in_t>;                                                                  \
                                                                                                                      \
+    public:                                                                                                          \
         static constexpr std::array<double, Order + 1> coeffs{__VA_ARGS__};                                          \
                                                                                                                      \
-    public:                                                                                                          \
         template<typename Fn>                                                                                        \
         static Vec<Fn> deriv(const Fn& f, double x)                                                                  \
         {                                                                                                            \
